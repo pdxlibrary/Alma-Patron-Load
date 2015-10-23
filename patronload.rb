@@ -6,9 +6,7 @@ require 'net/smtp'
 require 'erb'
 require 'logger'
 require 'date'
-
-
-# Converts a CSV export from Banner (Student Information System) to a zip archive of Alma-compatible XML files.
+require 'net/smtp'
 
 # Fields received from the SIS export:
 # "patron","per_pidm","id_number","last_name","first_name","middle_name",
@@ -31,7 +29,7 @@ class Patron
               :address_line1, :address_line2, :address_line3, :city, 
               :zip_code, :start_date, :state, :address_type, :email,
               :email_address_type, :telephone, :telephone_type, :telephone2,
-              :telephone2_type, :purge_date, :distance, :honors, :department
+              :telephone2_type, :purge_date, :distance, :honors, :department_code
 
   def extract_phone_number(number)
     if number.gsub(/\D/, "").match(/^1?(\d{3})(\d{3})(\d{4})/)
@@ -77,62 +75,58 @@ class Patron
     }
     @coadmit_code = @coadmits[row[:coadmit]]
 
-    ## USERNAME    
     @username = row[:stu_username].upcase unless row[:stu_username].nil?
 
-    ## STATISTICAL TYPES
     zipcode = row[:zip_1].chomp[0..4]
     @distance = zipcode == '' || (zipcode =~ /^\d{5}$/ && nondistance_zip_codes.include?(zipcode)) ? false : true
 
-    ## PATRON TYPE
     if @distance
       @patron_type = "#{@patron_types[row[:patron]]}-distance"
     else
       @patron_type = @patron_types[row[:patron]]
     end
 
-    @department = row[:orgn_desc] unless row[:orgn_desc] == '' || (@patron_type != 'faculty' && @patron_type != 'staff')
-    @department = @department.gsub(/&/, 'and') unless @department.nil?
+    department = row[:orgn_desc] unless row[:orgn_desc] == '' or row[:orgn_desc].nil? 
+    department = department.gsub(/&/, 'and') unless department.nil?
+    @department_code, *rest = department.split(/ /) unless department.nil?
+
     @honors = nil unless row[:patron] == 'HONOR'
 
-    ## EXPIRATION DATE
-    @expdate = case @patron_type
-    when @patron_type == 'staff'
+    if(@patron_type.match('staff'))
       if Date.today < Date.parse("#{Date.today.year}-06-01}")
-        "#{Date.today.year + 2}0630"
+        @expdate = "#{Date.today.year + 2}-06-30"
       else
-        "#{Date.today.year + 1}0630"
+        @expdate = "#{Date.today.year + 1}-06-30"
       end
-    when @patron_type == 'faculty'
-      "#{Date.today.year + 2}0630"
-    when @patron_type == 'grad', @patron_type == 'undergrad'
+    elsif @patron_type.match('faculty') or @patron_type.match('gradasst') or @patron_type.match('emeritus')
+      @expdate = "#{Date.today.year + 2}-06-30"
+    elsif @patron_type.match('grad') or @patron_type.match('undergrad') or @patron_type.match('honors') or @patron_type.match('highschool')
       if Date.today < Date.parse("#{Date.today.year}-03-15") # 1/1 - 3/14
-        "#{Date.today.year}1020"
+        @expdate = "#{Date.today.year}-10-20"
       elsif Date.today < Date.parse("#{Date.today.year}-06-15") # 3/15 - 6/14
-        "#{Date.today.year}1020"
+        @expdate = "#{Date.today.year}-10-20"
       elsif Date.today < Date.parse("#{Date.today.year}-09-01") # 6/15 - 8/31
-        "#{Date.today.year.next}0131"
+        @expdate = "#{Date.today.year.next}-01-31"
       elsif Date.today < Date.parse("#{Date.today.year}-12-15") # 9/1 - 12/14
-        "#{Date.today.year.next}0425"
+        @expdate = "#{Date.today.year.next}-04-25"
       else # 12/15 - 12/31
-        "#{Date.today.year.next}1020"
+        @expdate = "#{Date.today.year.next}-10-20"
       end
     else
-      "#{Date.today.year + 2}0630"
+      @expdate = "#{Date.today.year + 2}-06-30"
     end
 
-    ## PURGE DATE
-    @purge_date = Date.parse(@expdate).next_day(180).to_s.gsub(/-/, '') # I know...
+    @purge_date = Date.parse(@expdate).next_day(180).to_s # I know...
 
-    ## BARCODE
     @barcode = row[:id_number]
 
-    ## NAME
     @first_name = row[:first_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    if row[:first_name].include?('^')
+      @first_name = /\s\^((.*))\^/.match(@first_name)[1]
+    end
     @middle_name = row[:middle_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
     @last_name = row[:last_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
 
-    ## ADDRESS
     if @patron_type == 'faculty'
       @address_type = 'work'
     elsif @patron_type.include?('-distance')
@@ -149,14 +143,12 @@ class Patron
     @zip_code = zipcode.encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
     @city = row[:city_1].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
 
-    ## TELEPHONE
     row[:phone]
     @telephone = (row[:phone] == '' || row[:phone].nil?) ? nil : extract_phone_number(row[:phone])
     unless @telephone.nil?
       @telephone_type = @telephone.include?(@campus_phone_prefix) ? 'office' : 'home'
     end
     
-    ## TELEPHONE2
     row[:alt_phone]
     @telephone2 = (row[:alt_phone] == '' || row[:alt_phone].nil?) ? nil : extract_phone_number(row[:alt_phone])
     if @telephone2 == @telephone
@@ -166,7 +158,6 @@ class Patron
       @telephone2_type = @telephone2.include?(@campus_phone_prefix) ? 'office' : 'home'
     end
 
-    ## EMAIL
     @email = String.new(row[:email]) unless row[:email].nil?
     if @email.nil? || @email.include?(@campus_email_domain)
       if @patron_type == 'faculty' || @patron_type == 'staff' || @patron_type == 'emeritus'
@@ -199,6 +190,9 @@ opts = OptionParser.new do |parser|
   end
   parser.on("-z", "--zip_code_file FILENAME", "Non-distance ZIP code file") do |zip_code_file|
     options[:zip_code_file] = zip_code_file
+  end
+  parser.on("-e", "--dept_file FILENAME", "Departments to labels file") do |dept_file|
+    options[:dept_file] = dept_file
   end
   parser.on("-d", "--debug", "Write debug messages.") do |debug|
     options[:debug] = true
@@ -243,6 +237,11 @@ end
 all_patrons = []
 CSV.foreach("#{options[:sis_file]}", :headers => true, :header_converters => :symbol, encoding: "ISO-8859-1") do |row|
   all_patrons.push(Patron.new(row, @zip_codes))
+end
+
+departments = {}
+CSV.foreach("#{options[:dept_file]}", :headers => true, :header_converters => :symbol, :converters => :all) do |row|
+  departments[row.fields[0]] = Hash[row.headers[1..-1].zip(row.fields[1..-1])]
 end
 
 

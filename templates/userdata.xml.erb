@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<users>
+<% @patrons.each do |patron| -%>
+  <user>
+    <record_type desc="Public">PUBLIC</record_type>
+    <primary_id><%= patron.barcode %></primary_id>
+    <first_name><%= patron.first_name %></first_name>
+    <% if patron.middle_name.nil? || patron.middle_name == '' %>
+      <middle_name/>
+    <% else -%>
+      <middle_name><%= patron.middle_name %></middle_name>
+    <% end -%>
+    <last_name><%= patron.last_name %></last_name>
+    <full_name><%= patron.first_name %> <%= patron.last_name %></full_name>
+    <user_group desc="<%= patron.patron_type.capitalize %>"><%= patron.patron_type %></user_group>
+    <preferred_language desc="English">en</preferred_language>
+    <expiry_date><%= patron.expdate %></expiry_date>
+    <purge_date><%= patron.purge_date %></purge_date>
+    <account_type desc="External">EXTERNAL</account_type>
+    <external_id>SIS</external_id>
+    <status desc="Active">ACTIVE</status>
+    <contact_info>
+      <addresses>
+        <address segment_type="External" preferred="true">
+          <line1><%= patron.address_line1 %></line1>
+          <city><%= patron.city %></city>
+          <state_province><%= patron.state %></state_province>
+          <postal_code><%= patron.zip_code %></postal_code>
+          <country desc="United States">USA</country>
+          <address_types>
+            <address_type desc="<%= patron.address_type.capitalize %>"><%= patron.address_type %></address_type>
+          </address_types>
+        </address>
+      </addresses>
+      <emails>
+        <email segment_type="External" preferred="true">
+          <email_address><%= patron.email %></email_address>
+          <email_types>
+            <email_type desc="<%= patron.email_address_type.capitalize %>"><%= patron.email_address_type %></email_type>
+          </email_types>
+        </email>
+      </emails>
+      <% if !patron.telephone.nil? && patron.telephone != '' || !patron.telephone2.nil? && patron.telephone2 != '' -%>
+      <phones>
+      <% end -%>
+        <% if !patron.telephone.nil? && patron.telephone != '' -%>
+        <phone segment_type="External" preferred="true" preferred_sms="false">
+          <phone_number><%= patron.telephone %></phone_number>
+          <phone_types>
+            <phone_type desc="<%= patron.telephone_type.capitalize %>"><%= patron.telephone_type %></phone_type>
+          </phone_types>
+        </phone>
+        <% end -%>
+        <% if !patron.telephone2.nil? && patron.telephone2 != '' -%>
+        <phone segment_type="External" preferred="false" preferred_sms="false">
+          <phone_number><%= patron.telephone2 %></phone_number>
+          <phone_types>
+            <phone_type desc="<%= patron.telephone2_type.capitalize %>"><%= patron.telephone2_type %></phone_type>
+          </phone_types>
+        </phone>
+        <% end -%>
+      <% if !patron.telephone.nil? && patron.telephone != '' || !patron.telephone2.nil? && patron.telephone2 != '' -%>
+      </phones>
+      <% end -%>
+    </contact_info>
+    <user_identifiers>
+      <user_identifier segment_type="External">
+        <id_type desc="External">EXTERNAL</id_type>
+        <value><%= patron.username %></value>
+        <status>ACTIVE</status>
+      </user_identifier>
+      <user_identifier segment_type="External">
+        <id_type desc="University ID">UNIV_ID</id_type>
+        <value><%= patron.username.downcase %></value>
+        <status>ACTIVE</status>
+      </user_identifier>
+    </user_identifiers>
+    <user_roles>
+      <user_role>
+        <status>ACTIVE</status>
+        <scope desc="Portland State University">01ALLIANCE_PSU</scope>
+        <role_type>200</role_type>
+      </user_role>
+    </user_roles>
+    <% if !patron.department_code.nil? -%>
+    <user_statistics>
+      <% if !patron.department_code.nil? -%>
+      <user_statistic segment_type="External">
+        <statistic_category><%= patron.department_code %></statistic_category>
+      </user_statistic>
+      <% end -%>
+    </user_statistics>
+    <% else -%>
+    <user_statistics/>
+    <% end -%>
+  </user>
+<% end -%>
+</users>
