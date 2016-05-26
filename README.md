@@ -20,16 +20,15 @@ Developed using Ruby 2.0.0-p353 and its standard library.
 
 ### Example
 
-```ruby patronload.rb -i file_from_sis.csv -o userdata.xml -z non_distance_zipcodes.txt```
-
-Alternatively, use the included wrapper script.
-
-```./run-patronload.sh```
-
+  ```
+  ruby patronload.rb -i file_from_sis.csv -o userdata.xml -z non_distance_zipcodes.txt
+  ```
 
 ## Alma Patron Expirations
 
-```./expire-accounts.sh```
+  ```
+  ./expire-accounts.sh
+  ```
 
 ### Process
 
@@ -42,7 +41,9 @@ Alternatively, use the included wrapper script.
 
 ## Alma Patron Unexpirations
 
-```./unexpire-accounts.sh```
+  ```
+  ./unexpire-accounts.sh
+  ```
 
 ### Process
 
