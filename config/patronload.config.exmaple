@@ -1,0 +1,39 @@
+# Patron Load
+config_banner_sftphost=""
+config_banner_sftpuser=""
+config_banner_sftppass=""
+config_banner_filename="patrondata-$(date +"%Y%m%d").csv"
+config_banner_path="patron"
+config_ad_fileserver=""
+config_ad_share=""
+config_ad_user=""
+config_ad_pass=""
+config_ad_zipcodefilename="non-distance-zipcodes.txt"
+config_ad_path=""
+config_ad_deptcodefilename="departments.csv"
+config_xmlfilenamebase="userdata.xml"
+config_zipfilename="userdata.zip"
+config_sftplocation="/srv/sftp/alma/patrondata/synchronize"
+config_archivelocation="/srv/archived/alma/patrondata"
+config_archivefilename="$(date +"%Y%m%d").zip"
+
+# Expirations
+config_alma_analytics_expired_patrons_report_path="/almaws/v1/analytics/reports?path=%2Fshared%2FPortland%20State%20University%2FReports%2FExpired%20Users"
+config_alma_analytics_report_barcode_field="Column2"
+config_expired_patrons_group="expired"
+config_expirations_notice_subject="Output from the Patron Expiration Process"
+config_expirations_notice_recipient="libsys@pdx.edu"
+config_alma_to_be_expired_patrons_list="expired-patrons.txt"
+
+# Unexpirations
+config_alma_analytics_expired_group_members_report_path="/almaws/v1/analytics/reports?path=%2Fshared%2FPortland%20State%20University%2FReports%2FExpired%20Group%20Members"
+config_unexpirations_notice_subject="Output from the Patron Unexpiration Process"
+config_unexpirations_notice_recipient="libsys@pdx.edu"
+config_alma_analytics_unexpirations_barcode_field="Column1"
+config_alma_expired_patrons_list="expired-patron-group-members.txt"
+
+# Common Settings
+config_tempfolder="./tmp"
+config_alma_analitycs_api_key=""
+config_debug=0
+config_send_notices=0
