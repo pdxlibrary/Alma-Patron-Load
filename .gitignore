@@ -1,0 +1,7 @@
+/tmp/*
+patronload-config.yml
+*.xml
+*.zip
+config/*.config
+*.pyc
+*.swp
