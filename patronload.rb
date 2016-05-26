@@ -75,11 +75,14 @@ class Patron
     }
     @coadmit_code = @coadmits[row[:coadmit]]
 
+    ## USERNAME    
     @username = row[:stu_username].upcase unless row[:stu_username].nil?
 
+    ## STATISTICAL TYPES
     zipcode = row[:zip_1].chomp[0..4]
     @distance = zipcode == '' || (zipcode =~ /^\d{5}$/ && nondistance_zip_codes.include?(zipcode)) ? false : true
 
+    ## PATRON TYPE
     if @distance
       @patron_type = "#{@patron_types[row[:patron]]}-distance"
     else
@@ -90,8 +93,10 @@ class Patron
     department = department.gsub(/&/, 'and') unless department.nil?
     @department_code, *rest = department.split(/ /) unless department.nil?
 
+
     @honors = nil unless row[:patron] == 'HONOR'
 
+    ## EXPIRATION DATE
     if(@patron_type.match('staff'))
       if Date.today < Date.parse("#{Date.today.year}-06-01}")
         @expdate = "#{Date.today.year + 2}-06-30"
@@ -116,17 +121,22 @@ class Patron
       @expdate = "#{Date.today.year + 2}-06-30"
     end
 
+    ## PURGE DATE
     @purge_date = Date.parse(@expdate).next_day(180).to_s # I know...
 
+    ## BARCODE
     @barcode = row[:id_number]
 
-    @first_name = row[:first_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
-    if row[:first_name].include?('^')
-      @first_name = /\s\^((.*))\^/.match(@first_name)[1]
+    ## NAME
+    if row.has_key?(:pref_first_name) and !row[:pref_first_name].nil? and row[:pref_first_name] != ''
+      @first_name = row[:pref_first_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    else
+      @first_name = row[:first_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
     end
     @middle_name = row[:middle_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
     @last_name = row[:last_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
 
+    ## ADDRESS
     if @patron_type == 'faculty'
       @address_type = 'work'
     elsif @patron_type.include?('-distance')
@@ -143,12 +153,14 @@ class Patron
     @zip_code = zipcode.encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
     @city = row[:city_1].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
 
+    ## TELEPHONE
     row[:phone]
     @telephone = (row[:phone] == '' || row[:phone].nil?) ? nil : extract_phone_number(row[:phone])
     unless @telephone.nil?
       @telephone_type = @telephone.include?(@campus_phone_prefix) ? 'office' : 'home'
     end
     
+    ## TELEPHONE2
     row[:alt_phone]
     @telephone2 = (row[:alt_phone] == '' || row[:alt_phone].nil?) ? nil : extract_phone_number(row[:alt_phone])
     if @telephone2 == @telephone
@@ -158,6 +170,7 @@ class Patron
       @telephone2_type = @telephone2.include?(@campus_phone_prefix) ? 'office' : 'home'
     end
 
+    ## EMAIL
     @email = String.new(row[:email]) unless row[:email].nil?
     if @email.nil? || @email.include?(@campus_email_domain)
       if @patron_type == 'faculty' || @patron_type == 'staff' || @patron_type == 'emeritus'
@@ -196,6 +209,9 @@ opts = OptionParser.new do |parser|
   end
   parser.on("-d", "--debug", "Write debug messages.") do |debug|
     options[:debug] = true
+  end
+  parser.on("-s", "--suppress_email", "Suppress email notices.") do |suppress_email|
+    options[:suppress_email] = true
   end
   parser.on_tail("-h", "--help", "Display this screen") do |help|
     puts parser.help
@@ -244,18 +260,45 @@ CSV.foreach("#{options[:dept_file]}", :headers => true, :header_converters => :s
   departments[row.fields[0]] = Hash[row.headers[1..-1].zip(row.fields[1..-1])]
 end
 
-
 ## Write Alma XML files
 log.debug("Writing #{all_patrons.count} patrons to Alma XML file(s).")
 xml_file_id = 1
 basename = File.basename(options[:alma_file])
 dirname = File.dirname(options[:alma_file])
 
-
 ## Alma likes XML files with less than 10000 records. 
 all_patrons.each_slice(10000).to_a.each do |patrons|
   log.debug("*** XML FILE #{xml_file_id}: BEGIN ***")
   filename = "#{dirname}/#{xml_file_id}-#{basename}"
+
+  patrons.each do |patron|
+    if patron.first_name == patron.last_name
+      log.warn("First name - last name issue with #{patron.barcode}")
+    end
+    if !patron.department_code.nil? and !departments.has_key?(patron.department_code)
+      log.warn("Department code #{patron.department_code} was not found in existing departments list")
+      if !options[:suppress_email]
+        message_to = "libsys@pdx.edu"
+        message_from = "libsys@pdx.edu"
+        message_cc = "herc@pdx.edu"
+        Net::SMTP.start('mailhost.pdx.edu', 25) do |smtp|
+          smtp.open_message_stream(message_from, message_to) do |f|
+            f.puts "From: #{message_from}"
+            f.puts "To: #{message_to}"
+            f.puts "Cc: #{message_cc}"
+            f.puts "Subject: Unrecognized department code"
+            f.puts
+            f.puts "An unrecognized department code was encountered in today\'s patron load. "
+            f.puts "Code Found: #{patron.department_code}"
+            f.puts "Affected Patron ID: #{patron.barcode}"
+          end
+        end
+      else
+        log.debug("An unrecognized department code was encountered: #{patron.department_code} in patron id #{patron.barcode}")
+      end
+    end
+  end
+
   begin
     template = ERB.new(File.read('templates/userdata.xml.erb'), nil, '-')
     @patrons = patrons
