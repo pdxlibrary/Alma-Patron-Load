@@ -11,22 +11,6 @@ if [ ! -d $config_tempfolder ]; then
 	mkdir $config_tempfolder
 fi
 
-# Retrieve patron data file from the Banner SFTP server
-# sshpass is not ideal, but key-based ssh auth wasn't a possibility
-cd $config_tempfolder
-sshpass \
-	-p $config_banner_sftppass sftp -oStrictHostKeyChecking=no -oBatchMode=no -b - \
-	$config_banner_sftpuser@$config_banner_sftphost << EOF
-	cd $config_banner_path
-	get $config_banner_filename	
-	bye
-EOF
-
-# Sanitize the patron data file
-cd $APPHOME
-sed -i -e 's/\([0-9]"\)"/\1/g' $config_tempfolder/$config_banner_filename
-
-
 declare -A affected_users
 patron_group="${config_expired_patrons_group}"
 
