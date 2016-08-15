@@ -5,3 +5,5 @@ patronload-config.yml
 config/*.config
 *.pyc
 *.swp
+fabfile.py
+venv

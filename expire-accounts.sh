@@ -4,6 +4,19 @@
 
 APPHOME=${PWD}
 
+# Bootstrap the Python environment
+if [ ! -d venv ]; then
+        if [ -x `which virtualenv` ]; then
+                echo "Bootstrapping the Python environment..."
+                virtualenv venv -p /usr/bin/python
+                venv/bin/pip install -r requirements.txt
+                echo "Environment bootstrapped."
+        else
+                echo "I can't find Python Virtualenv. Is it installed?"
+                exit 1
+        fi
+fi
+
 ## Load process configuration files
 . config/patronload.config
 
@@ -23,10 +36,10 @@ if [[ $config_debug != 0 ]]; then
         echo "Processing expirations..."
 fi
 
-python fetch-analytics-report-data.py -k ${config_alma_analitycs_api_key} -p ${config_alma_analytics_expired_patrons_report_path} -f ${config_alma_analytics_report_barcode_field} > $config_tempfolder/$config_alma_to_be_expired_patrons_list
+venv/bin/python fetch-analytics-report-data.py -k ${config_alma_analitycs_api_key} -p ${config_alma_analytics_expired_patrons_report_path} -f ${config_alma_analytics_report_barcode_field} > $config_tempfolder/$config_alma_to_be_expired_patrons_list
 for barcode in `cat $config_tempfolder/$config_alma_to_be_expired_patrons_list`; do
 	if [[ $config_debug == 0 ]]; then
-                python change-patron-group.py -g ${patron_group} -k ${config_alma_analitycs_api_key} ${barcode}
+                venv/bin/python change-patron-group.py -g ${patron_group} -k ${config_alma_analitycs_api_key} ${barcode}
         else
                 echo "python change-patron-group.py -g ${patron_group} -k ${config_alma_analitycs_api_key} ${barcode}"
 	fi
