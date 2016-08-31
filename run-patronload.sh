@@ -25,9 +25,14 @@ EOF
 # Retrieve the non-distance ZIP codes file from DFS
 smbclient -U $config_ad_user -c "cd $config_ad_path; get $config_ad_zipcodefilename; get $config_ad_deptcodefilename; exit" //$config_ad_fileserver/$config_ad_share "$config_ad_pass"
 
+#exit
+
 # Sanitize the patron data file
 cd $APPHOME
 sed -i -e 's/\([0-9]"\)"/\1/g' $config_tempfolder/$config_banner_filename
+sed -i -e 's/[[:blank:]]*$//g' $config_tempfolder/$config_banner_filename # remove whitespace from end of line
+sed -i -e 's/","/|/g' $config_tempfolder/$config_banner_filename # convert "," to |
+sed -i -e 's/"//g' $config_tempfolder/$config_banner_filename # remove " from line
 
 ## Patron load - Generate Alma XML files
 if [[ $config_debug != 0 ]]; then

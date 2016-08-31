@@ -42,9 +42,9 @@ class Patron
   def initialize(row, nondistance_zip_codes)
 
     # Kluge to replace invalid characters
-    row.each do |key|
-      unless row[key].nil?
-        row[key].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    row.each do |k, v|
+      unless v.nil?
+        row[k] = v.encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
       end
     end
 
@@ -79,7 +79,11 @@ class Patron
     @username = row[:stu_username].upcase unless row[:stu_username].nil?
 
     ## STATISTICAL TYPES
-    zipcode = row[:zip_1].chomp[0..4]
+    if row[:zip_1].nil?
+      zipcode = ''
+    else
+      zipcode = row[:zip_1].chomp[0..4]
+    end
     @distance = zipcode == '' || (zipcode =~ /^\d{5}$/ && nondistance_zip_codes.include?(zipcode)) ? false : true
 
     ## PATRON TYPE
@@ -133,7 +137,9 @@ class Patron
     else
       @first_name = row[:first_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
     end
-    @middle_name = row[:middle_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    if !row[:middle_name].nil?
+      @middle_name = row[:middle_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    end
     @last_name = row[:last_name].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
 
     ## ADDRESS
@@ -144,14 +150,31 @@ class Patron
     else
       @address_type = 'school'
     end
+    
+    if row[:street_line1].nil?
+      @address_line1 = ''
+    else
+      @address_line1 = row[:street_line1].gsub(/&/, 'and').gsub(/(?<!^|,)"(?!,|$)/, '_').encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8') || nil
+    end
+    @address_line2 = row[:street_line2].gsub(/&/, 'and').gsub(/(?<!^|,)"(?!,|$)/, '_').encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8') || nil unless @address_line2.nil?
+    @address_line3 = row[:street_line3].gsub(/&/, 'and').gsub(/(?<!^|,)"(?!,|$)/, '_').encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8') || nil unless @address_line3.nil?
 
-    @address_line1 = row[:street_line1].gsub(/&/, 'and').encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8') || nil
-    @address_line2 = row[:street_line2].gsub(/&/, 'and').encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8') || nil unless @address_line2.nil?
-    @address_line3 = row[:street_line3].gsub(/&/, 'and').encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8') || nil unless @address_line3.nil?
+    if row[:state_1].nil?
+      @state = ''
+    else
+      @state = row[:state_1].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    end
 
-    @state = row[:state_1].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
-    @zip_code = zipcode.encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
-    @city = row[:city_1].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    if row[:zip_1].nil?
+      @zip_code = ''
+    else
+      @zip_code = zipcode.encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    end
+    if row[:city].nil?
+      @city = ''
+    else
+      @city = row[:city_1].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
+    end
 
     ## TELEPHONE
     row[:phone]
@@ -251,7 +274,7 @@ end
 
 ## Read SIS export file
 all_patrons = []
-CSV.foreach("#{options[:sis_file]}", :headers => true, :header_converters => :symbol, encoding: "ISO-8859-1") do |row|
+CSV.foreach("#{options[:sis_file]}", :headers => true, :header_converters => :symbol, encoding: "ISO-8859-1", :col_sep => "|") do |row|
   all_patrons.push(Patron.new(row, @zip_codes))
 end
 
@@ -266,7 +289,7 @@ xml_file_id = 1
 basename = File.basename(options[:alma_file])
 dirname = File.dirname(options[:alma_file])
 
-## Alma likes XML files with less than 10000 records. 
+## Alma likes XML files with 10000 records or fewer. 
 all_patrons.each_slice(10000).to_a.each do |patrons|
   log.debug("*** XML FILE #{xml_file_id}: BEGIN ***")
   filename = "#{dirname}/#{xml_file_id}-#{basename}"
