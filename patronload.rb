@@ -22,6 +22,20 @@ require 'net/smtp'
 #    'userdata.xml' will result in 1-userdata.xml, 2-userdata.xml, ...
 # -d Enable debug logging (to stdout)
 
+
+class NoUsernameException < StandardError
+  attr_reader :barcode
+
+  def initialize(msg="No username found", barcode)
+    @barcode = barcode
+    if barcode.nil?
+      super(msg)
+    else
+      super("No username found for #{@barcode}")
+    end
+  end
+end
+
 class Patron
 
   attr_reader :expdate, :first_name, :middle_name, :last_name,
@@ -75,8 +89,15 @@ class Patron
     }
     @coadmit_code = @coadmits[row[:coadmit]]
 
+    ## BARCODE
+    @barcode = row[:id_number]
+
     ## USERNAME    
     @username = row[:stu_username].upcase unless row[:stu_username].nil?
+
+    if @username.nil?
+      raise NoUsernameException.new(@barcode)
+    end
 
     ## STATISTICAL TYPES
     if row[:zip_1].nil?
@@ -96,7 +117,6 @@ class Patron
     department = row[:orgn_desc] unless row[:orgn_desc] == '' or row[:orgn_desc].nil? 
     department = department.gsub(/&/, 'and') unless department.nil?
     @department_code, *rest = department.split(/ /) unless department.nil?
-
 
     @honors = nil unless row[:patron] == 'HONOR'
 
@@ -127,9 +147,6 @@ class Patron
 
     ## PURGE DATE
     @purge_date = Date.parse(@expdate).next_day(180).to_s # I know...
-
-    ## BARCODE
-    @barcode = row[:id_number]
 
     ## NAME
     if row.has_key?(:pref_first_name) and !row[:pref_first_name].nil? and row[:pref_first_name] != ''
@@ -275,7 +292,11 @@ end
 ## Read SIS export file
 all_patrons = []
 CSV.foreach("#{options[:sis_file]}", :headers => true, :header_converters => :symbol, encoding: "ISO-8859-1", :col_sep => "|") do |row|
-  all_patrons.push(Patron.new(row, @zip_codes))
+  begin
+    all_patrons.push(Patron.new(row, @zip_codes))
+  rescue NoUsernameException => e
+    log.warn("#{e}")
+  end
 end
 
 departments = {}
