@@ -187,7 +187,7 @@ class Patron
     else
       @zip_code = zipcode.encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
     end
-    if row[:city].nil?
+    if row[:city_1].nil?
       @city = ''
     else
       @city = row[:city_1].encode!('ISO-8859-1', "binary", :invalid => :replace, :undef => :replace).force_encoding('UTF-8')
