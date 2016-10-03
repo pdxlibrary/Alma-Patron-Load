@@ -1,25 +1,28 @@
 #! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import csv
+import codecs
 import datetime
 import getopt
 import logging
-#import os
+import os
 import sys
 import re
+import unicodecsv as csv
 
-#from collections import OrderedDict
+# from collections import OrderedDict
 from datetime import date
+from itertools import islice
+from jinja2 import Environment, FileSystemLoader
 
-# patron|per_pidm|id_number|last_name|first_name|middle_name|
-# street_line1|street_line2|street_line3|city_1|state_1|zip_1|phone|alt_phone|email|
-# stu_major|stu_major_desc|orgn_code_home|orgn_desc|coadmit|honor_prog|
-# stu_username|udc_id|pref_first_name|termination_dt|
 
-PATRON_DATA_FILE = "tmp/patrondata.csv"
+PATRON_DATA_FILE = "tmp/testdata.csv"
 DEPARTMENTS_FILE = "tmp/departments.csv"
 ZIP_CODES_FILE = "tmp/non-distance-zipcodes.txt"
-
+TEMPLATES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")
+TEMPLATE_FILENAME = "userdata-template.xml"
+OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp")
+OUTPUT_FILENAME_BASE = "-username.xml"
 
 class Patron:
     campus_phone_prefix = '503-725-'
@@ -77,6 +80,34 @@ class Patron:
         return expdate.date()
 
     def __init__(self, patron_data, is_distance=False):
+        """
+        Patron Data Fields
+        patron
+        per_pidm
+        id_number
+        last_name
+        first_name
+        middle_name
+        street_line1
+        street_line2
+        street_line3
+        city_1
+        state_1
+        zip_1
+        phone
+        alt_phone
+        email
+        stu_major
+        stu_major_desc
+        orgn_code_home
+        orgn_desc
+        coadmit
+        honor_prog
+        stu_username
+        udc_id
+        pref_first_name
+        termination_dt
+        """
         if patron_data['pref_first_name']:
             self.first_name = patron_data['pref_first_name']
         else:
@@ -124,12 +155,13 @@ class Patron:
             else:
                 self.telephone_type = 'home'
         if patron_data['alt_phone']:
-            clean_phone = phone_numbers.sub("", patron_data['alt_phone'])
-            self.telephone2 = '-'.join([clean_phone[:3], clean_phone[3:6], clean_phone[6:10]])
-            if self.campus_phone_prefix in self.telephone2:
-                self.telephone2_type = 'office'
-            else:
-                self.telephone2_type = 'home'
+            if patron_data['alt_phone'] != patron_data['phone']:
+                clean_phone = phone_numbers.sub("", patron_data['alt_phone'])
+                self.telephone2 = '-'.join([clean_phone[:3], clean_phone[3:6], clean_phone[6:10]])
+                if self.campus_phone_prefix in self.telephone2:
+                    self.telephone2_type = 'office'
+                else:
+                    self.telephone2_type = 'home'
 
         if patron_data['stu_username'] == '':
             raise ValueError('Username missing for patron record %s' % self.barcode)
@@ -138,11 +170,13 @@ class Patron:
 
         if patron_data['orgn_desc']:
             self.department_code = patron_data['orgn_desc'].split(" ")[0]
+        """
         elif patron_data['stu_major'] is '0000':
             logging.warning("Both department and major missing in patron record %s !!!" % patron_data['id_number'])
         elif patron_data['stu_major']:
             self.department_code = patron_data['stu_major']
             self.department_name = patron_data['stu_major_desc']
+        """
 
         self.start_date = datetime.date.today().strftime("%Y%m%d")
 
@@ -215,80 +249,59 @@ def find_new_department_codes(department_codes, patron_data):
     return new_department_codes
 
 
+def dict_chunks(dict_data, chunk_size=10000):
+    iterator = iter(dict_data)
+    for i in xrange(0, len(dict_data), chunk_size):
+        yield {key: dict_data[key] for key in islice(iterator, chunk_size)}
+
+
 def main():
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hv', ['help', 'verbose'])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hd', ['help', 'debug'])
     except getopt.GetoptError as error:
         print(str(error))
         usage()
         sys.exit(2)
 
     option_missing = False
-    verbose = False
+    debug = False
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
             sys.exit(2)
-        if opt in ('v', '--verbose'):
-            verbose = True
+        if opt in ('d', '--debug'):
+            debug = True
 
     if option_missing:
         usage()
         sys.exit(2)
 
-    if verbose:
-        logging.info("Verbose mode")
+    if debug:
+        logging.basicConfig(level=logging.INFO)
+    else:
+        logging.basicConfig(level=logging.ERROR)
 
     department_codes = load_department_codes_file(DEPARTMENTS_FILE)
     non_distance_zip_codes = load_zip_codes_file(ZIP_CODES_FILE)
     patron_data = load_patron_data_file(PATRON_DATA_FILE, sorted(non_distance_zip_codes))
-
-    if verbose:
-        for barcode, patron in patron_data.items():
-            print("\nNew Record")
-            print("\tBarcode: %s" % barcode)
-            print("\tFirst name: %s" % patron.first_name)
-            if hasattr(patron, 'middle_name'):
-                print("\tMiddle name: %s" % patron.middle_name)
-            print("\tLast name: %s" % patron.last_name)
-            print("\tExpiration Date: %s" % patron.expdate)
-            print("\tPurge Date: %s" % patron.purge_date)
-            if hasattr(patron, 'address_line1'):
-                print("\tAddress: %s " % patron.address_line1)
-            if hasattr(patron, 'city'):
-                print("\tCity: %s" % patron.city)
-            if hasattr(patron, 'state'):
-                print("\tState: %s" % patron.state)
-            if hasattr(patron, 'zip_code'):
-                print("\tZIP code: %s" % patron.zip_code)
-            if hasattr(patron, 'address_type'):
-                print("\tAddress type: %s" % patron.address_type)
-            if hasattr(patron, 'email'):
-                print("\tEmail: %s" % patron.email)
-            if hasattr(patron, 'email_address_type'):
-                print("\tEmail: %s" % patron.email_address_type)
-            if hasattr(patron, 'telephone'):
-                print("\tPhone: %s" % patron.telephone)
-            if hasattr(patron, 'telephone_type'):
-                print("\tPhone: %s" % patron.telephone_type)
-            if hasattr(patron, 'telephone2'):
-                print("\tPhone: %s" % patron.telephone2)
-            if hasattr(patron, 'telephone2_type'):
-                print("\tPhone: %s" % patron.telephone2_type)
-            if hasattr(patron, 'coadmit_code'):
-                print("\tCoadmit code: %s" % patron.coadmit_code)
-            if hasattr(patron, 'telephone2'):
-                print("\tAlt phone: %s" % patron.telephone2)
-            if hasattr(patron, 'username'):
-                print("\tPhone: %s" % patron.username)
-            if hasattr(patron, 'department_code'):
-                print("\tDepartment code: %s" % patron.department_code)
-            if hasattr(patron, 'patron_type'):
-                print("\tPatron type: %s" % patron.patron_type)
-
     new_department_codes = find_new_department_codes(department_codes, patron_data)
-    print("%s new department codes found." % len(new_department_codes))
+
+    logging.info(str(len(new_department_codes)) + " new department codes found.")
+    for department_code in new_department_codes:
+        logging.info(department_code)
+
+    env = Environment(loader=FileSystemLoader(TEMPLATES_FOLDER), trim_blocks=True)
+    template = env.get_template(TEMPLATE_FILENAME)
+    file_iterator = 1
+    for patron_list in dict_chunks(patron_data, 10000):
+        result = template.render(patron_data=patron_list)
+        filename = str(file_iterator) + OUTPUT_FILENAME_BASE
+        with codecs.open(os.path.join(OUTPUT_FOLDER, filename), 'w', encoding="utf8") as f:
+            f.write(result)
+            f.close()
+        file_iterator += 1
+        logging.info("Data written to " + filename + ".")
 
 
 if __name__ == '__main__':
