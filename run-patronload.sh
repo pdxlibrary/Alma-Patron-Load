@@ -27,19 +27,18 @@ smbclient -U $config_ad_user -c "cd $config_ad_path; get $config_ad_zipcodefilen
 
 # Sanitize the patron data file
 cd $APPHOME
-sed -i -e 's/\([0-9]"\)"/\1/g' $config_tempfolder/$config_banner_filename
+#sed -i -e 's/\([0-9]"\)"/\1/g' $config_tempfolder/$config_banner_filename
 sed -i -e 's/,[[:space:]]*$/|/g' $config_tempfolder/$config_banner_filename # remove whitespace from end of line
 sed -i -e 's/","/|/g' $config_tempfolder/$config_banner_filename # convert "," to |
 sed -i -e 's/"//g' $config_tempfolder/$config_banner_filename # remove " from line
 
 ## Patron load - Generate Alma XML files
-if [[ $config_debug != 0 ]]; then
+if [[ $config_debug ]]; then
         echo "Running the patron load (`date`)..."
 fi
-~/.rbenv/shims/ruby patronload.rb -i "$config_tempfolder/$config_banner_filename" \
-                                  -e "$config_tempfolder/$config_ad_deptcodefilename" \
-                                  -o "$config_tempfolder/$config_xmlfilenamebase" \
-                                  -z "$config_tempfolder/$config_ad_zipcodefilename"
+./venv/bin/python patronload.py -p "$config_tempfolder/$config_banner_filename" \
+                                -d "$config_tempfolder/$config_ad_deptcodefilename" \
+                                -z "$config_tempfolder/$config_ad_zipcodefilename"
 
 # Generate the ZIP file in the SFTP location
 cd $config_tempfolder
@@ -48,12 +47,13 @@ zip -q $config_sftplocation/$config_zipfilename *-${config_xmlfilenamebase}
 # Archive the files used for this load
 zip $config_archivelocation/$config_archivefilename $config_ad_zipcodefilename $config_banner_filename
 
-if [[ $config_debug != 0 ]]; then
+if [[ $config_debug ]]; then
         echo "Finished patron load (`date`)."
 fi
 
 # Clean up
 cd $APPHOME
-if [[ $config_debug == 0 ]]; then
-        rm $config_tempfolder/*
+if [[ ! $config_debug ]]; then
+        rm -f $config_tempfolder/*
 fi
+

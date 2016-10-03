@@ -170,13 +170,6 @@ class Patron:
 
         if patron_data['orgn_desc']:
             self.department_code = patron_data['orgn_desc'].split(" ")[0]
-        """
-        elif patron_data['stu_major'] is '0000':
-            logging.warning("Both department and major missing in patron record %s !!!" % patron_data['id_number'])
-        elif patron_data['stu_major']:
-            self.department_code = patron_data['stu_major']
-            self.department_name = patron_data['stu_major_desc']
-        """
 
         self.start_date = datetime.date.today().strftime("%Y%m%d")
 
