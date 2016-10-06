@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
 import codecs
@@ -16,6 +16,8 @@ from itertools import islice
 from jinja2 import Environment, FileSystemLoader
 
 
+PREVIOUS_PATRON_DATA_FILE = "tmp/patrondata-20161003.csv"
+CURRENT_PATRON_DATA_FILE = "tmp/patrondata-20161004.csv"
 PATRON_DATA_FILE = "tmp/testdata.csv"
 DEPARTMENTS_FILE = "tmp/departments.csv"
 ZIP_CODES_FILE = "tmp/non-distance-zipcodes.txt"
@@ -191,7 +193,7 @@ def load_department_codes_file(file_path):
     file_contents = {}
 
     csv_file = open(file_path)
-    csv_reader = csv.DictReader(csv_file, delimiter=",")
+    csv_reader = csv.DictReader(csv_file, delimiter=',')
     for row in csv_reader:
         file_contents[row['code']] = row['label']
     csv_file.close()
@@ -211,7 +213,7 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
     patron_data = {}
 
     csv_file = open(file_path)
-    csv_reader = csv.DictReader(csv_file, delimiter="|", quotechar='"')
+    csv_reader = csv.DictReader(csv_file, delimiter='|', quotechar='"', encoding='ISO-8859-1')
     for row in csv_reader:
         distance = False
         if row['zip_1'] and row['zip_1'][:5] not in non_distance_zip_codes:
@@ -222,6 +224,23 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
             logging.warning(error.args)
 
     return patron_data
+
+
+## This is where you left off yesterday
+def find_patron_data_diffs(patron_data, previous_file, non_distance_zip_codes):
+    group_changes = {}
+
+    csv_file = open(previous_file)
+    csv_reader = csv.DictReader(csv_file, delimiter='|', quotechar='"', encoding='ISO-8859-1')
+    for row in csv_reader:
+        distance = False
+        print("BARCODE: %s, GROUP: %s" % (row['id_number'], row['patron']))
+        print("CODE: %s" % Patron.patron_types[row['patron']])
+        #    distance = True
+        #if group from patron_data is not equal to group from CSV data with '-distance' if appropriate:
+        #  add barcode,group_code to group_changes
+
+    return group_changes
 
 
 def find_new_department_codes(department_codes, patron_data):
@@ -276,9 +295,10 @@ def main():
         logging.basicConfig(level=logging.ERROR)
 
     department_codes = load_department_codes_file(DEPARTMENTS_FILE)
-    non_distance_zip_codes = load_zip_codes_file(ZIP_CODES_FILE)
-    patron_data = load_patron_data_file(PATRON_DATA_FILE, sorted(non_distance_zip_codes))
+    non_distance_zip_codes = sorted(load_zip_codes_file(ZIP_CODES_FILE))
+    patron_data = load_patron_data_file(CURRENT_PATRON_DATA_FILE, non_distance_zip_codes)
     new_department_codes = find_new_department_codes(department_codes, patron_data)
+    #group_changes = find_patron_data_diffs(patron_data, PREVIOUS_PATRON_DATA_FILE, non_distance_zip_codes):
 
     logging.info(str(len(new_department_codes)) + " new department codes found.")
     for department_code in new_department_codes:
