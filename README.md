@@ -24,19 +24,19 @@ These are scripts used to manage patron records in Alma.
 
  * Users to Expire
 
-    User Group Code is equal to / is in expired
-    AND
-    Expiry Date is less than or equal to CURDATE()
-    AND
-    Identifier Type is equal to / is in University ID
+    User Group Code is equal to / is in expired  
+    AND  
+    Expiry Date is less than or equal to CURDATE()  
+    AND  
+    Identifier Type is equal to / is in University ID  
 
  * Users to Unexpire
 
-    User Group Code is equal to / is in expired
-    AND
-    Expiry Date is greater than CURDATE()
-    AND
-    Identifier Type is equal to / is in University ID
+    User Group Code is equal to / is in expired  
+    AND  
+    Expiry Date is greater than CURDATE()  
+    AND  
+    Identifier Type is equal to / is in University ID  
     
 
 ### Example
