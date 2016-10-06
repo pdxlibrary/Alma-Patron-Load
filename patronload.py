@@ -16,15 +16,16 @@ from itertools import islice
 from jinja2 import Environment, FileSystemLoader
 
 
-PREVIOUS_PATRON_DATA_FILE = "tmp/patrondata-20161003.csv"
-CURRENT_PATRON_DATA_FILE = "tmp/patrondata-20161004.csv"
+PREVIOUS_PATRON_DATA_FILE = "tmp/patrondata-20161005.csv"
+CURRENT_PATRON_DATA_FILE = "tmp/patrondata-20161006.csv"
 PATRON_DATA_FILE = "tmp/testdata.csv"
 DEPARTMENTS_FILE = "tmp/departments.csv"
 ZIP_CODES_FILE = "tmp/non-distance-zipcodes.txt"
 TEMPLATES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")
 TEMPLATE_FILENAME = "userdata-template.xml"
 OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp")
-OUTPUT_FILENAME_BASE = "-username.xml"
+OUTPUT_FILENAME_BASE = "-userdata.xml"
+GROUP_CHANGE_FILE = "group-changes.csv"
 
 class Patron:
     campus_phone_prefix = '503-725-'
@@ -226,19 +227,21 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
     return patron_data
 
 
-## This is where you left off yesterday
 def find_patron_data_diffs(patron_data, previous_file, non_distance_zip_codes):
     group_changes = {}
+    previous_patron_data = load_patron_data_file(previous_file, non_distance_zip_codes)
 
-    csv_file = open(previous_file)
-    csv_reader = csv.DictReader(csv_file, delimiter='|', quotechar='"', encoding='ISO-8859-1')
-    for row in csv_reader:
-        distance = False
-        print("BARCODE: %s, GROUP: %s" % (row['id_number'], row['patron']))
-        print("CODE: %s" % Patron.patron_types[row['patron']])
-        #    distance = True
-        #if group from patron_data is not equal to group from CSV data with '-distance' if appropriate:
-        #  add barcode,group_code to group_changes
+    for barcode, patron in patron_data.items():
+        if hasattr(patron, 'department_code'):
+            if barcode in previous_patron_data.keys():
+                if hasattr(previous_patron_data[barcode], 'department_code'):
+                    logging.debug("User with barcode %s changed from %s to %s." % (barcode, patron.department_code, previous_patron_data[barcode].department_code))
+                    if patron.department_code != previous_patron_data[barcode].department_code:
+                        group_changes[barcode] = patron.department_code 
+                else:
+                    logging.debug("Record for user with barcode %s has no department. Not updating this account." % (barcode, patron.department_code))
+            else:
+                logging.debug("User with barcode %s is was added today. Department code should be correct." % barcode)
 
     return group_changes
 
@@ -298,11 +301,14 @@ def main():
     non_distance_zip_codes = sorted(load_zip_codes_file(ZIP_CODES_FILE))
     patron_data = load_patron_data_file(CURRENT_PATRON_DATA_FILE, non_distance_zip_codes)
     new_department_codes = find_new_department_codes(department_codes, patron_data)
-    #group_changes = find_patron_data_diffs(patron_data, PREVIOUS_PATRON_DATA_FILE, non_distance_zip_codes):
+    # 2016/10/06: Disabling this function because Alma sync appears to allow changes now.
+    # group_changes = find_patron_data_diffs(patron_data, PREVIOUS_PATRON_DATA_FILE, non_distance_zip_codes) 
 
     logging.info(str(len(new_department_codes)) + " new department codes found.")
     for department_code in new_department_codes:
         logging.info(department_code)
+
+    # logging.info(str(len(group_changes)) + " group changes found.")
 
     env = Environment(loader=FileSystemLoader(TEMPLATES_FOLDER), trim_blocks=True)
     template = env.get_template(TEMPLATE_FILENAME)
@@ -315,6 +321,16 @@ def main():
             f.close()
         file_iterator += 1
         logging.info("Data written to " + filename + ".")
+
+    """
+    with open(os.path.join(OUTPUT_FOLDER, GROUP_CHANGE_FILE), 'w') as f:
+        field_names = ['barcode', 'group_code']
+        csv_writer = csv.DictWriter(f, fieldnames=field_names, delimiter=',')
+        for barcode, group in group_changes.items():
+            logging.debug("Writing %s, %s to CSV file" % (barcode, group))
+            csv_writer.writerow({'barcode': barcode, 'group_code': group})
+        f.close()
+    """
 
 
 if __name__ == '__main__':
