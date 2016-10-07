@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import codecs
-import datetime
 import getopt
 import logging
 import os
@@ -10,22 +9,35 @@ import sys
 import re
 import unicodecsv as csv
 
-# from collections import OrderedDict
-from datetime import date
+from datetime import date, datetime, timedelta
 from itertools import islice
 from jinja2 import Environment, FileSystemLoader
 
 
-CURRENT_PATRON_DATA_FILE = "tmp/patrondata-" + datetime.datetime.strftime(date.today(), "%Y%m%d") + ".csv"
-PREVIOUS_PATRON_DATA_FILE = "tmp/patrondata-" + datetime.datetime.strftime(date.today() - datetime.timedelta(days=1), "%Y%m%d") + ".csv"
-PATRON_DATA_FILE = "tmp/testdata.csv"
-DEPARTMENTS_FILE = "tmp/departments.csv"
-ZIP_CODES_FILE = "tmp/non-distance-zipcodes.txt"
+# Input
+CURRENT_PATRON_DATA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+                                   "tmp", "patrondata-"
+                                   + datetime.strftime(date.today(), "%Y%m%d") 
+                                   + ".csv")
+PREVIOUS_PATRON_DATA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+                                    "tmp", "patrondata-" 
+                                    + datetime.strftime(date.today() - timedelta(days=1), "%Y%m%d") 
+                                    + ".csv")
+DEPARTMENTS_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                "tmp", "departments.csv")
+ZIP_CODES_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                              "tmp", "non-distance-zipcodes.txt")
+
+# Templates
 TEMPLATES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")
 TEMPLATE_FILENAME = "userdata-template.xml"
+
+# Ouptut
 OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp")
 OUTPUT_FILENAME_BASE = "-userdata.xml"
-GROUP_CHANGE_FILE = "group-changes.csv"
+GROUP_CHANGE_FILENAME = "group-changes.csv"
+NEW_DEPARTMENTS_FILENAME = "new-departments.csv"
+
 
 class Patron:
     campus_phone_prefix = '503-725-'
@@ -53,32 +65,32 @@ class Patron:
     @staticmethod
     def get_expiration_date(patron_type):
         if patron_type in ['staff', 'staff-distance']:
-            if date.today() < datetime.datetime.strptime(str(date.today().year) + "0601", "%Y%m%d").date():
-                expdate = datetime.datetime.strptime(str(date.today().year + 2) + "0630")
+            if date.today() < datetime.strptime(str(date.today().year) + "0601", "%Y%m%d").date():
+                expdate = datetime.strptime(str(date.today().year + 2) + "0630")
             else:
-                expdate = datetime.datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
+                expdate = datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
         elif patron_type in ['faculty', 'gradasst', 'emeritus',
                              'faculty-distance', 'gradasst-distance', 'emeritus-distance']:
-            expdate = datetime.datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
+            expdate = datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
         elif patron_type in ['grad', 'undergrad', 'honors', 'highschool',
                              'grad-distance', 'undergrad-distance', 'highschool-distance']:
             # 1/1 - 3/14
-            if date.today() < datetime.datetime.strptime(str(date.today().year) + "0315", "%Y%m%d").date():
-                expdate = datetime.datetime.strptime(str(date.today().year) + "1020", "%Y%m%d")
+            if date.today() < datetime.strptime(str(date.today().year) + "0315", "%Y%m%d").date():
+                expdate = datetime.strptime(str(date.today().year) + "1020", "%Y%m%d")
             # 3/15 - 6/14
-            elif date.today() < datetime.datetime.strptime(str(date.today().year) + "0615", "%Y%m%d").date():
-                expdate = datetime.datetime.strptime(str(date.today()) + "1020", "%Y%m%d")
+            elif date.today() < datetime.strptime(str(date.today().year) + "0615", "%Y%m%d").date():
+                expdate = datetime.strptime(str(date.today()) + "1020", "%Y%m%d")
             # 6/15 - 8/31
-            elif date.today() < datetime.datetime.strptime(str(date.today().year) + "0901", "%Y%m%d").date():
-                expdate = datetime.datetime.strptime(str(date.today().year + 1) + "0131", "%Y%m%d")
+            elif date.today() < datetime.strptime(str(date.today().year) + "0901", "%Y%m%d").date():
+                expdate = datetime.strptime(str(date.today().year + 1) + "0131", "%Y%m%d")
             # 9/1 - 12/14
-            elif date.today() < datetime.datetime.strptime(str(date.today().year) + "1215", "%Y%m%d").date():
-                expdate = datetime.datetime.strptime(str(date.today().year + 1) + "0425", "%Y%m%d")
+            elif date.today() < datetime.strptime(str(date.today().year) + "1215", "%Y%m%d").date():
+                expdate = datetime.strptime(str(date.today().year + 1) + "0425", "%Y%m%d")
             # 12/15 - 12/31
             else:
-                expdate = datetime.datetime.strptime(str(date.today().year + 1) + "1020", "%Y%m%d")
+                expdate = datetime.strptime(str(date.today().year + 1) + "1020", "%Y%m%d")
         else:
-            expdate = datetime.datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
+            expdate = datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
 
         return expdate.date()
 
@@ -140,7 +152,7 @@ class Patron:
             self.address_type = 'school'
 
         self.expdate = self.get_expiration_date(self.patron_type)
-        self.purge_date = self.expdate + datetime.timedelta(days=180)
+        self.purge_date = self.expdate + timedelta(days=180)
 
         self.email = patron_data['email']
         if self.email.endswith(self.campus_email_domain):
@@ -174,7 +186,7 @@ class Patron:
         if patron_data['orgn_desc']:
             self.department_code = patron_data['orgn_desc'].split(" ")[0]
 
-        self.start_date = datetime.date.today().strftime("%Y%m%d")
+        self.start_date = date.today().strftime("%Y%m%d")
 
 options = {
     u'-h, --help': u'Display help',
@@ -299,14 +311,16 @@ def main():
 
     department_codes = load_department_codes_file(DEPARTMENTS_FILE)
     non_distance_zip_codes = sorted(load_zip_codes_file(ZIP_CODES_FILE))
-    patron_data = load_patron_data_file(CURRENT_PATRON_DATA_FILE, non_distance_zip_codes)
+    patron_data = load_patron_data_file(CURRENT_PATRON_DATA, non_distance_zip_codes)
     new_department_codes = find_new_department_codes(department_codes, patron_data)
     # 2016/10/06: Disabling this function because Alma sync appears to allow changes now.
-    # group_changes = find_patron_data_diffs(patron_data, PREVIOUS_PATRON_DATA_FILE, non_distance_zip_codes) 
+    # group_changes = find_patron_data_diffs(patron_data, PREVIOUS_PATRON_DATA, non_distance_zip_codes) 
 
     logging.info(str(len(new_department_codes)) + " new department codes found.")
-    for department_code in new_department_codes:
-        logging.info(department_code)
+    
+
+    #for department_code in new_department_codes:
+    #    logging.info(department_code)
 
     # logging.info(str(len(group_changes)) + " group changes found.")
 
@@ -323,7 +337,7 @@ def main():
         logging.info("Data written to " + filename + ".")
 
     """
-    with open(os.path.join(OUTPUT_FOLDER, GROUP_CHANGE_FILE), 'w') as f:
+    with open(os.path.join(OUTPUT_FOLDER, GROUP_CHANGE_FILENAME), 'w') as f:
         field_names = ['barcode', 'group_code']
         csv_writer = csv.DictWriter(f, fieldnames=field_names, delimiter=',')
         for barcode, group in group_changes.items():
