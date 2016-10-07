@@ -238,7 +238,7 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
         try:
             patron_data[row['id_number']] = Patron(row, distance)
         except ValueError as error:
-            logging.warning(error.args)
+            logging.warn(error.args)
 
     return patron_data
 
@@ -286,6 +286,16 @@ def dict_chunks(dict_data, chunk_size=10000):
         yield {key: dict_data[key] for key in islice(iterator, chunk_size)}
 
 
+def find_fn_ln_issue(patron_data):
+    issues = []
+
+    for barcode, patron in patron_data.items():
+        if patron.first_name == patron.last_name:
+            issues.append(barcode)
+
+    return issues
+
+
 def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], 'dhr:', ['help', 'debug', 'recipients'])
@@ -318,26 +328,31 @@ def main():
     if debug:
         logging.basicConfig(level=logging.INFO)
     else:
-        logging.basicConfig(level=logging.ERROR)
+        logging.basicConfig(level=logging.WARN)
 
     department_codes = load_department_codes_file(DEPARTMENTS_FILE)
     non_distance_zip_codes = sorted(load_zip_codes_file(ZIP_CODES_FILE))
     patron_data = load_patron_data_file(CURRENT_PATRON_DATA, non_distance_zip_codes)
     new_department_codes = find_new_department_codes(department_codes, patron_data)
+    fn_ln_issues = find_fn_ln_issue(patron_data)
 
     if len(new_department_codes) > 0:
         message_text = "New department codes were found in the patron load\n\n"
         for department_code in new_department_codes:
             message_text += "\n" + str(department_code)
 
-    message = MIMEText(message_text)
-    message['Subject'] = 'New department codes found in the patron load'
-    message['From'] = RETURN_ADDRESS
-    message['To'] = ', '.join(notice_recipients)
+        message = MIMEText(message_text)
+        message['Subject'] = 'New department codes found in the patron load'
+        message['From'] = RETURN_ADDRESS
+        message['To'] = ', '.join(notice_recipients)
 
-    s = smtplib.SMTP(SMTP_HOST)
-    s.sendmail(re.findall(r'<(.*)>', RETURN_ADDRESS)[0], notice_recipients, message.as_string())
-    s.quit()
+        s = smtplib.SMTP(SMTP_HOST)
+        s.sendmail(re.findall(r'<(.*)>', RETURN_ADDRESS)[0], notice_recipients, message.as_string())
+        s.quit()
+
+    if len(fn_ln_issues) > 0:
+        for barcode in fn_ln_issues:
+            logging.warn("First name - last name issue with %s" % barcode)
 
     env = Environment(loader=FileSystemLoader(TEMPLATES_FOLDER), trim_blocks=True)
     template = env.get_template(TEMPLATE_FILENAME)
