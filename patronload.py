@@ -7,9 +7,11 @@ import logging
 import os
 import sys
 import re
+import smtplib
 import unicodecsv as csv
 
 from datetime import date, datetime, timedelta
+from email.mime.text import MIMEText
 from itertools import islice
 from jinja2 import Environment, FileSystemLoader
 
@@ -37,7 +39,8 @@ OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp")
 OUTPUT_FILENAME_BASE = "-userdata.xml"
 GROUP_CHANGE_FILENAME = "group-changes.csv"
 NEW_DEPARTMENTS_FILENAME = "new-departments.csv"
-
+RETURN_ADDRESS = 'Patron Load <patronload@www.lib.pdx.edu>'
+SMTP_HOST = "mailhost.pdx.edu"
 
 class Patron:
     campus_phone_prefix = '503-725-'
@@ -189,8 +192,9 @@ class Patron:
         self.start_date = date.today().strftime("%Y%m%d")
 
 options = {
+    u'-d, --debug': u'Debug mode',
     u'-h, --help': u'Display help',
-    u'-v, --verbose': u'Verbose mode',
+    u'-r, --recipients': u'Comma-separated list of email notice ecipient(s)',
 }
 
 
@@ -284,7 +288,7 @@ def dict_chunks(dict_data, chunk_size=10000):
 
 def main():
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hd', ['help', 'debug'])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'dhr:', ['help', 'debug', 'recipients'])
     except getopt.GetoptError as error:
         print(str(error))
         usage()
@@ -292,13 +296,20 @@ def main():
 
     option_missing = False
     debug = False
+    notice_recipients = []
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
             sys.exit(2)
-        if opt in ('d', '--debug'):
+        if opt in ('-d', '--debug'):
             debug = True
+        if opt in ('-r', '--recipients'):
+            notice_recipients = arg.split(',')
+
+    if len(notice_recipients) == 0:
+        print('Email notice recipients missing')
+        option_missing = True
 
     if option_missing:
         usage()
@@ -313,16 +324,20 @@ def main():
     non_distance_zip_codes = sorted(load_zip_codes_file(ZIP_CODES_FILE))
     patron_data = load_patron_data_file(CURRENT_PATRON_DATA, non_distance_zip_codes)
     new_department_codes = find_new_department_codes(department_codes, patron_data)
-    # 2016/10/06: Disabling this function because Alma sync appears to allow changes now.
-    # group_changes = find_patron_data_diffs(patron_data, PREVIOUS_PATRON_DATA, non_distance_zip_codes) 
 
-    logging.info(str(len(new_department_codes)) + " new department codes found.")
-    
+    if len(new_department_codes) > 0:
+        message_text = "New department codes were found in the patron load\n\n"
+        for department_code in new_department_codes:
+            message_text += "\n" + str(department_code)
 
-    #for department_code in new_department_codes:
-    #    logging.info(department_code)
+    message = MIMEText(message_text)
+    message['Subject'] = 'New department codes found in the patron load'
+    message['From'] = RETURN_ADDRESS
+    message['To'] = ', '.join(notice_recipients)
 
-    # logging.info(str(len(group_changes)) + " group changes found.")
+    s = smtplib.SMTP(SMTP_HOST)
+    s.sendmail(re.findall(r'<(.*)>', RETURN_ADDRESS)[0], notice_recipients, message.as_string())
+    s.quit()
 
     env = Environment(loader=FileSystemLoader(TEMPLATES_FOLDER), trim_blocks=True)
     template = env.get_template(TEMPLATE_FILENAME)
@@ -335,16 +350,6 @@ def main():
             f.close()
         file_iterator += 1
         logging.info("Data written to " + filename + ".")
-
-    """
-    with open(os.path.join(OUTPUT_FOLDER, GROUP_CHANGE_FILENAME), 'w') as f:
-        field_names = ['barcode', 'group_code']
-        csv_writer = csv.DictWriter(f, fieldnames=field_names, delimiter=',')
-        for barcode, group in group_changes.items():
-            logging.debug("Writing %s, %s to CSV file" % (barcode, group))
-            csv_writer.writerow({'barcode': barcode, 'group_code': group})
-        f.close()
-    """
 
 
 if __name__ == '__main__':
