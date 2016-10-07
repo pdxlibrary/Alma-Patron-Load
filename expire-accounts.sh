@@ -4,19 +4,6 @@
 
 APPHOME=${PWD}
 
-# Bootstrap the Python environment
-if [ ! -d venv ]; then
-        if [ -x `which virtualenv` ]; then
-                echo "Bootstrapping the Python environment..."
-                virtualenv venv -p /usr/bin/python
-                venv/bin/pip install -r requirements.txt
-                echo "Environment bootstrapped."
-        else
-                echo "I can't find Python Virtualenv. Is it installed?"
-                exit 1
-        fi
-fi
-
 ## Load process configuration files
 . config/patronload.config
 
