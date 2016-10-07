@@ -11,7 +11,7 @@ These are scripts used to manage patron records in Alma.
  0. Use the Alma User API to expire accounts based on results in Users to Expire analysis.
  0. Generate Alma XML files, maximum of 20000 records each, using a template.
  0. Generate a list of users with statistical groups or account types that need changed.
- 0. Use the Alma User API to reassign groups in the previous step.
+ 0. Use the Alma User API to reassign groups in the previous step. (disabled for now)
  0. Use the Alma User API to reassign user groups from expired based on the results in 
     Users to Unexpire analysis. 
  0. Create a zip archive of the XML files and transfer it to the library

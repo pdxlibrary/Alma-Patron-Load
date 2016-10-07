@@ -36,9 +36,7 @@ sed -i -e 's/"//g' $config_tempfolder/$config_banner_filename # remove " from li
 if [[ $config_debug ]]; then
         echo "Running the patron load (`date`)..."
 fi
-./venv/bin/python patronload.py -p "$config_tempfolder/$config_banner_filename" \
-                                -d "$config_tempfolder/$config_ad_deptcodefilename" \
-                                -z "$config_tempfolder/$config_ad_zipcodefilename"
+./venv/bin/python patronload.py 
 
 # Generate the ZIP file in the SFTP location
 cd $config_tempfolder

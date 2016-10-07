@@ -9,7 +9,7 @@ env.local_stage = os.getcwd()
 env.roledefs = {
         'testing': ['deneb.lib.pdx.edu'],
         'production': ['libsrv9.lib.pdx.edu'],
-        }
+}
 env.time_stamp = time.strftime("%Y%m%d%H%M%S")
 env.user = 'patronload'
 env.app_dir = '/srv/patronload'
@@ -36,8 +36,8 @@ def deploy():
         rsync_project(
                 remote_dir='{0}'.format(env.app_dir),
                 local_dir='./',
-                exclude=('*.pyc', '*.md', '.git*', '*.swp', 'fabfile.py', 'venv', 'tmp', 'sftp', 'archived', 'config'),
-                )
+                exclude=('*.pyc', '*.md', '.git*', '*.swp', 'fabfile.py', 'venv', 'tmp', 
+                    'sftp', 'archived', 'config/patronload.config.example'),)
         with cd('{0}'.format(env.app_dir)):
             if run('test -d venv').failed:
                 run('virtualenv venv -p /usr/bin/python2.7')

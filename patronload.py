@@ -16,8 +16,8 @@ from itertools import islice
 from jinja2 import Environment, FileSystemLoader
 
 
-PREVIOUS_PATRON_DATA_FILE = "tmp/patrondata-20161005.csv"
-CURRENT_PATRON_DATA_FILE = "tmp/patrondata-20161006.csv"
+CURRENT_PATRON_DATA_FILE = "tmp/patrondata-" + datetime.datetime.strftime(date.today(), "%Y%m%d") + ".csv"
+PREVIOUS_PATRON_DATA_FILE = "tmp/patrondata-" + datetime.datetime.strftime(date.today() - datetime.timedelta(days=1), "%Y%m%d") + ".csv"
 PATRON_DATA_FILE = "tmp/testdata.csv"
 DEPARTMENTS_FILE = "tmp/departments.csv"
 ZIP_CODES_FILE = "tmp/non-distance-zipcodes.txt"
