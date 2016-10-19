@@ -7,8 +7,9 @@ import logging
 import os
 import sys
 import re
+import unicodecsv
+import csv
 import smtplib
-import unicodecsv as csv
 
 from datetime import date, datetime, timedelta
 from email.mime.text import MIMEText
@@ -17,14 +18,9 @@ from jinja2 import Environment, FileSystemLoader
 
 
 # Input
-CURRENT_PATRON_DATA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
-                                   "tmp", "patrondata-"
-                                   + datetime.strftime(date.today(), "%Y%m%d") 
-                                   + ".csv")
-PREVIOUS_PATRON_DATA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
-                                    "tmp", "patrondata-" 
-                                    + datetime.strftime(date.today() - timedelta(days=1), "%Y%m%d") 
-                                    + ".csv")
+CURRENT_PATRON_DATA_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+                                        "tmp", 
+                                        "patrondata-" + date.today().strftime("%Y%m%d") + ".csv")
 DEPARTMENTS_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 "tmp", "departments.csv")
 ZIP_CODES_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -74,7 +70,7 @@ class Patron:
                 expdate = datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
         elif patron_type in ['faculty', 'gradasst', 'emeritus',
                              'faculty-distance', 'gradasst-distance', 'emeritus-distance']:
-            expdate = datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
+            expdate = datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
         elif patron_type in ['grad', 'undergrad', 'honors', 'highschool',
                              'grad-distance', 'undergrad-distance', 'highschool-distance']:
             # 1/1 - 3/14
@@ -126,8 +122,9 @@ class Patron:
         pref_first_name
         termination_dt
         """
+
         if patron_data['pref_first_name']:
-            self.first_name = patron_data['pref_first_name']
+            self.first_name = patron_data['pref_first_name'].decode('utf-8').encode('ascii', 'ignore')
         else:
             self.first_name = patron_data['first_name']
 
@@ -142,10 +139,10 @@ class Patron:
 
         if patron_data['coadmit']:
             self.coadmit_code = self.coadmits[patron_data['coadmit']]
-        self.address_line1 = patron_data['street_line1']  #validate
-        self.city = patron_data['city_1']  # validate
-        self.state = patron_data['state_1']  # validate
-        self.zip_code = patron_data['zip_1'][:5]  # validate
+        self.address_line1 = patron_data['street_line1']
+        self.city = patron_data['city_1']
+        self.state = patron_data['state_1']
+        self.zip_code = patron_data['zip_1'][:5]
 
         if self.patron_type == 'faculty':
             self.address_type = 'work'
@@ -219,6 +216,8 @@ def load_department_codes_file(file_path):
 
 
 def load_zip_codes_file(file_path):
+    file_contents = []
+
     text_file = open(file_path)
     file_contents = text_file.read().splitlines()
     text_file.close()
@@ -229,16 +228,19 @@ def load_zip_codes_file(file_path):
 def load_patron_data_file(file_path, non_distance_zip_codes):
     patron_data = {}
 
-    csv_file = open(file_path)
-    csv_reader = csv.DictReader(csv_file, delimiter='|', quotechar='"', encoding='ISO-8859-1')
+    csv_file = open(file_path, 'rb')
+    csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='latin-1') # ISO-8859-1 ?
     for row in csv_reader:
         distance = False
+    
         if row['zip_1'] and row['zip_1'][:5] not in non_distance_zip_codes:
             distance = True
         try:
             patron_data[row['id_number']] = Patron(row, distance)
         except ValueError as error:
             logging.warn(error.args)
+
+    csv_file.close()
 
     return patron_data
 
@@ -281,6 +283,7 @@ def find_new_department_codes(department_codes, patron_data):
 
 
 def dict_chunks(dict_data, chunk_size=10000):
+    # based on http://stackoverflow.com/questions/22878743/how-to-split-dictionary-into-multiple-dictionaries-fast
     iterator = iter(dict_data)
     for i in xrange(0, len(dict_data), chunk_size):
         yield {key: dict_data[key] for key in islice(iterator, chunk_size)}
@@ -332,7 +335,7 @@ def main():
 
     department_codes = load_department_codes_file(DEPARTMENTS_FILE)
     non_distance_zip_codes = sorted(load_zip_codes_file(ZIP_CODES_FILE))
-    patron_data = load_patron_data_file(CURRENT_PATRON_DATA, non_distance_zip_codes)
+    patron_data = load_patron_data_file(CURRENT_PATRON_DATA_FILE, non_distance_zip_codes)
     new_department_codes = find_new_department_codes(department_codes, patron_data)
     fn_ln_issues = find_fn_ln_issue(patron_data)
 
@@ -357,10 +360,16 @@ def main():
     env = Environment(loader=FileSystemLoader(TEMPLATES_FOLDER), trim_blocks=True)
     template = env.get_template(TEMPLATE_FILENAME)
     file_iterator = 1
+
+    logging.info("%s records found." % len(patron_data))
+
     for patron_list in dict_chunks(patron_data, 10000):
         result = template.render(patron_data=patron_list)
         filename = str(file_iterator) + OUTPUT_FILENAME_BASE
-        with codecs.open(os.path.join(OUTPUT_FOLDER, filename), 'w', encoding="utf8") as f:
+
+        logging.info("Writing %s records to %s." % (len(patron_list), filename))
+
+        with codecs.open(os.path.join(OUTPUT_FOLDER, filename), 'w', encoding="utf-8") as f:
             f.write(result)
             f.close()
         file_iterator += 1
@@ -369,3 +378,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
