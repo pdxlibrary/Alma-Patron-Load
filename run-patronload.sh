@@ -11,8 +11,8 @@ if [ ! -d $config_tempfolder ]; then
 	mkdir $config_tempfolder
 fi
 
-# Retrieve patron data file from the Banner SFTP server
-# sshpass is not ideal, but key-based ssh auth wasn't a possibility
+# Retrieve patron data file from the Banner SFTP server.
+# Using sshpass is not ideal, but key-based ssh auth wasn't a possibility.
 cd $config_tempfolder
 sshpass \
 	-p $config_banner_sftppass sftp -oStrictHostKeyChecking=no -oBatchMode=no -b - \
@@ -27,16 +27,12 @@ smbclient -U $config_ad_user -c "cd $config_ad_path; get $config_ad_zipcodefilen
 
 # Sanitize the patron data file
 cd $APPHOME
-#sed -i -e 's/\([0-9]"\)"/\1/g' $config_tempfolder/$config_banner_filename
-sed -i -e 's/,[[:space:]]*$/|/g' $config_tempfolder/$config_banner_filename # remove whitespace from end of line
-sed -i -e 's/","/|/g' $config_tempfolder/$config_banner_filename # convert "," to |
-sed -i -e 's/"//g' $config_tempfolder/$config_banner_filename # remove " from line
 
 ## Patron load - Generate Alma XML files
 if [[ $config_debug ]]; then
         echo "Running the patron load (`date`)..."
 fi
-./venv/bin/python patronload.py 
+./venv/bin/python patronload.py -r "cgeib@pdx.edu"
 
 # Generate the ZIP file in the SFTP location
 cd $config_tempfolder
