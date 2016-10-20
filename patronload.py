@@ -124,7 +124,7 @@ class Patron:
         """
 
         if patron_data['pref_first_name']:
-            self.first_name = patron_data['pref_first_name'].decode('utf-8').encode('ascii', 'ignore')
+            self.first_name = patron_data['pref_first_name'] 
         else:
             self.first_name = patron_data['first_name']
 
@@ -229,7 +229,8 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
     patron_data = {}
 
     csv_file = open(file_path, 'rb')
-    csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='latin-1') # ISO-8859-1 ?
+    #csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='latin-1') # ISO-8859-1 ?
+    csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='ISO-8859-1') # ISO-8859-1 ?
     for row in csv_reader:
         distance = False
     
