@@ -125,6 +125,7 @@ class Patron:
 
         if patron_data['pref_first_name']:
             self.first_name = patron_data['pref_first_name'] 
+            #self.first_name = patron_data['pref_first_name'].decode('utf-8').encode('ascii', 'ignore')
         else:
             self.first_name = patron_data['first_name']
 

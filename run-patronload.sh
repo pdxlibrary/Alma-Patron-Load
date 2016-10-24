@@ -14,6 +14,7 @@ fi
 # Retrieve patron data file from the Banner SFTP server.
 # Using sshpass is not ideal, but key-based ssh auth wasn't a possibility.
 cd $config_tempfolder
+
 sshpass \
 	-p $config_banner_sftppass sftp -oStrictHostKeyChecking=no -oBatchMode=no -b - \
 	$config_banner_sftpuser@$config_banner_sftphost << EOF
@@ -31,8 +32,10 @@ cd $APPHOME
 ## Patron load - Generate Alma XML files
 if [[ $config_debug ]]; then
         echo "Running the patron load (`date`)..."
+        ./venv/bin/python patronload.py -r "$config_email_recipients" -d
+else
+        ./venv/bin/python patronload.py -r "$config_email_recipients"
 fi
-./venv/bin/python patronload.py -r "cgeib@pdx.edu"
 
 # Generate the ZIP file in the SFTP location
 cd $config_tempfolder
@@ -45,9 +48,5 @@ if [[ $config_debug ]]; then
         echo "Finished patron load (`date`)."
 fi
 
-# Clean up
 cd $APPHOME
-if [[ ! $config_debug ]]; then
-        rm -f $config_tempfolder/*
-fi
 
