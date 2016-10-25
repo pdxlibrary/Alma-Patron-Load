@@ -46,7 +46,8 @@ Requirements: Python 2.7
   ```
   ./expire-accounts.sh;
   ./run-patronload.sh;
-  ./unexpire-accounts.sh
+  ./unexpire-accounts.sh;
+  ./clean-up.sh
   ```
 
 ### Deployment
