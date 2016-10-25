@@ -44,8 +44,8 @@ Requirements: Python 2.7
 ### Example
 
   ```
-  ./expire-accounts.sh
-  ./run-patronload.sh
+  ./expire-accounts.sh;
+  ./run-patronload.sh;
   ./unexpire-accounts.sh
   ```
 
