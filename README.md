@@ -2,6 +2,8 @@
 
 These are scripts used to manage patron records in Alma. 
 
+Requirements: Python 2.7
+
 
 ### Process
 
@@ -46,4 +48,20 @@ These are scripts used to manage patron records in Alma.
   ./run-patronload.sh
   ./unexpire-accounts.sh
   ```
+
+### Deployment
+
+  * The deployment process is based on Fabric. Send the role to the process using the '-R' option.
+
+  * Deploy to the production server (libsrv9)
+
+     ```
+     fab -R production deploy
+     ```
+
+  * Deploy to the testing server (deneb)
+
+     ```
+     fab -R testing deploy
+     ```
 

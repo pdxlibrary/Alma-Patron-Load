@@ -125,7 +125,6 @@ class Patron:
 
         if patron_data['pref_first_name']:
             self.first_name = patron_data['pref_first_name'] 
-            #self.first_name = patron_data['pref_first_name'].decode('utf-8').encode('ascii', 'ignore')
         else:
             self.first_name = patron_data['first_name']
 
@@ -137,6 +136,13 @@ class Patron:
             self.patron_type = self.patron_types[patron_data['patron']] + "-distance"
         else:
             self.patron_type = self.patron_types[patron_data['patron']]
+
+        # If the faculty member is taking classes, use graduate assistant patron type
+        # so student resources (group study rooms, etc.) are available.
+        if self.patron_type == 'faculty' and patron_data['stu_major']:
+            self.patron_type = 'gradasst'
+        elif self.patron_type == 'faculty-distance' and patron_data['stu_major']:
+            self.patron_type = 'gradasst-distance'
 
         if patron_data['coadmit']:
             self.coadmit_code = self.coadmits[patron_data['coadmit']]
@@ -230,8 +236,7 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
     patron_data = {}
 
     csv_file = open(file_path, 'rb')
-    #csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='latin-1') # ISO-8859-1 ?
-    csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='ISO-8859-1') # ISO-8859-1 ?
+    csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='ISO-8859-1') 
     for row in csv_reader:
         distance = False
     
