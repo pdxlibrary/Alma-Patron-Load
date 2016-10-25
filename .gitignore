@@ -1,9 +1,32 @@
-/tmp/*
-patronload-config.yml
-*.xml
+# Archives
+*.gz
 *.zip
-config/*.config
+*.tar
+*.rar
+*.7z
+
+# Python
 *.pyc
+venv/
+
+# Logs
+*.log
+*.out
+
+# Databases
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PyCharm
+.idea/
+*.iml
+
+# Vim
 *.swp
-fabfile.py
-venv
+
+# Other
+*.old
+*.bak

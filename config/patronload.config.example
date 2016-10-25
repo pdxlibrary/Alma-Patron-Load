@@ -13,27 +13,32 @@ config_ad_path=""
 config_ad_deptcodefilename="departments.csv"
 config_xmlfilenamebase="userdata.xml"
 config_zipfilename="userdata.zip"
-config_sftplocation="/srv/sftp/alma/patrondata/synchronize"
-config_archivelocation="/srv/archived/alma/patrondata"
+config_sftplocation="/srv/sftp/exlibris/patrondata/synchronize"
+config_archivelocation="/srv/sftp/exlibris/patrondata/archive"
 config_archivefilename="$(date +"%Y%m%d").zip"
+config_email_recipients=""
 
 # Expirations
-config_alma_analytics_expired_patrons_report_path="/almaws/v1/analytics/reports?path=%2Fshared%2FPortland%20State%20University%2FReports%2FExpired%20Users"
+config_alma_analytics_expired_patrons_report_path="/almaws/v1/analytics/reports?path=%2Fshared%2FPortland%20State%20University%2FReports%2FPatron%20Load%2FUsers%20to%20Expire"
 config_alma_analytics_report_barcode_field="Column2"
 config_expired_patrons_group="expired"
 config_expirations_notice_subject="Output from the Patron Expiration Process"
 config_expirations_notice_recipient="libsys@pdx.edu"
 config_alma_to_be_expired_patrons_list="expired-patrons.txt"
+config_do_expirations=1
+config_send_expiration_notice=1
 
 # Unexpirations
-config_alma_analytics_expired_group_members_report_path="/almaws/v1/analytics/reports?path=%2Fshared%2FPortland%20State%20University%2FReports%2FExpired%20Group%20Members"
+config_alma_analytics_expired_group_members_report_path="/almaws/v1/analytics/reports?path=%2Fshared%2FPortland%20State%20University%2FReports%2FPatron%20Load%2FUsers%20to%20Unexpire"
 config_unexpirations_notice_subject="Output from the Patron Unexpiration Process"
 config_unexpirations_notice_recipient="libsys@pdx.edu"
-config_alma_analytics_unexpirations_barcode_field="Column1"
+config_alma_analytics_unexpirations_barcode_field="Column2"
 config_alma_expired_patrons_list="expired-patron-group-members.txt"
+config_do_unexpirations=1
+config_send_unexpiration_notice=1
 
-# Common Settings
-config_tempfolder="./tmp"
+# General
+config_tempfolder="tmp"
+config_previous_folder="prev"
 config_alma_analitycs_api_key=""
-config_debug=0
-config_send_notices=0
+config_debug=
