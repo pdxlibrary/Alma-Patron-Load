@@ -42,19 +42,8 @@ These are scripts used to manage patron records in Alma.
 ### Example
 
   ```
-  ./run-patronload.sh
-  ```
-
-  What this does:
-
-  ```
-  ./fetch-banner-data.sh
-  ./fetch-zip-codes.sh
-  ./fetch-department-codes.sh
   ./expire-accounts.sh
-  ./venv/bin/python patronload.py -p file_from_sis.csv -d departments.csv -z non_distance_zipcodes.txt
+  ./run-patronload.sh
   ./unexpire-accounts.sh
   ```
-
-
 
