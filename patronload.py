@@ -139,7 +139,7 @@ class Patron:
 
         # If the faculty member is taking classes, use graduate assistant patron type
         # so student resources (group study rooms, etc.) are available.
-        if self.patron_type == 'faculty' and patron_data['stu_major']:
+        if self.patron_type == 'faculty' and patron_data['stu_major'] and patron_data['stu_major'] != '0000':
             self.patron_type = 'gradasst'
         elif self.patron_type == 'faculty-distance' and patron_data['stu_major']:
             self.patron_type = 'gradasst-distance'
