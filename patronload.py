@@ -137,12 +137,10 @@ class Patron:
         else:
             self.patron_type = self.patron_types[patron_data['patron']]
 
-        # If the faculty member is taking classes, use graduate assistant patron type
-        # so student resources (group study rooms, etc.) are available.
-        if self.patron_type == 'faculty' and patron_data['stu_major'] and patron_data['stu_major'] != '0000':
+        # Exception for a faculty member who is taking classes and 
+        # wants to book study rooms
+        if self.barcode = '960751171'
             self.patron_type = 'gradasst'
-        elif self.patron_type == 'faculty-distance' and patron_data['stu_major']:
-            self.patron_type = 'gradasst-distance'
 
         if patron_data['coadmit']:
             self.coadmit_code = self.coadmits[patron_data['coadmit']]
