@@ -43,6 +43,7 @@ class Patron:
     campus_email_domain = 'pdx.edu'
     patron_types = {
         'FACULTY': 'faculty',
+        'ENROLLED-FACULTY': 'enrolled-faculty',
         'EMERITUS': 'emeritus',
         'GRADASSISTANT': 'gradasst',
         'GRADUATE': 'grad',
