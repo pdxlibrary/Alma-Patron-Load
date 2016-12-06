@@ -141,7 +141,7 @@ class Patron:
         # Exception for a faculty member who is taking classes and 
         # wants to book study rooms
         if self.barcode == '960751171':
-            self.patron_type = 'gradasst'
+            self.patron_type = 'enrolled-faculty'
 
         if patron_data['coadmit']:
             self.coadmit_code = self.coadmits[patron_data['coadmit']]
