@@ -69,7 +69,7 @@ class Patron:
                 expdate = datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
             else:
                 expdate = datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
-        elif patron_type in ['faculty', 'gradasst', 'emeritus',
+        elif patron_type in ['faculty', 'gradasst', 'emeritus', 'enrolled-faculty',
                              'faculty-distance', 'gradasst-distance', 'emeritus-distance']:
             expdate = datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
         elif patron_type in ['grad', 'undergrad', 'honors', 'highschool',
