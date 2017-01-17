@@ -66,7 +66,7 @@ class Patron:
     def get_expiration_date(patron_type):
         if patron_type in ['staff', 'staff-distance']:
             if date.today() < datetime.strptime(str(date.today().year) + "0601", "%Y%m%d").date():
-                expdate = datetime.strptime(str(date.today().year + 2) + "0630")
+                expdate = datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
             else:
                 expdate = datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
         elif patron_type in ['faculty', 'gradasst', 'emeritus',
@@ -138,11 +138,6 @@ class Patron:
         else:
             self.patron_type = self.patron_types[patron_data['patron']]
 
-        # Exception for a faculty member who is taking classes and 
-        # wants to book study rooms
-        if self.barcode == '960751171':
-            self.patron_type = 'enrolled-faculty'
-
         if patron_data['coadmit']:
             self.coadmit_code = self.coadmits[patron_data['coadmit']]
         self.address_line1 = patron_data['street_line1']
@@ -150,7 +145,7 @@ class Patron:
         self.state = patron_data['state_1']
         self.zip_code = patron_data['zip_1'][:5]
 
-        if self.patron_type == 'faculty':
+        if self.patron_type == 'faculty' or self.patron_type == 'enrolled-faculty':
             self.address_type = 'work'
         elif is_distance:
             self.address_type = 'home'
