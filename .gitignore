@@ -27,6 +27,10 @@ Thumbs.db
 # Vim
 *.swp
 
+# VS Code
+.vscode
+
 # Other
 *.old
 *.bak
+/tmp
