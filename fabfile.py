@@ -7,7 +7,7 @@ from contextlib import contextmanager
 
 env.local_stage = os.getcwd()
 env.roledefs = {
-        'testing': ['deneb.lib.pdx.edu'],
+        'testing': ['libsrv9.lib.pdx.edu'],
         'production': ['nomad.lib.pdx.edu'],
 }
 env.time_stamp = time.strftime("%Y%m%d%H%M%S")
@@ -37,7 +37,7 @@ def deploy():
                 remote_dir='{0}'.format(env.app_dir),
                 local_dir='./',
                 exclude=('*.pyc', '*.md', '.git*', '*.swp', 'fabfile.py', 'venv', 'tmp', 
-                    'sftp', 'archived', 'config/patronload.config.example'),)
+                    'sftp', 'archived', 'config/patronload.config.example', '.vscode'),)
         with cd('{0}'.format(env.app_dir)):
             if run('test -d venv').failed:
                 run('virtualenv venv -p /usr/bin/python2.7')
