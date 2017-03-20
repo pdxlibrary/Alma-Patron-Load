@@ -8,7 +8,7 @@ from contextlib import contextmanager
 env.local_stage = os.getcwd()
 env.roledefs = {
         'testing': ['deneb.lib.pdx.edu'],
-        'production': ['libsrv9.lib.pdx.edu'],
+        'production': ['nomad.lib.pdx.edu'],
 }
 env.time_stamp = time.strftime("%Y%m%d%H%M%S")
 env.user = 'patronload'

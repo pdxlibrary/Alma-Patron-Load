@@ -79,7 +79,7 @@ class Patron:
                 expdate = datetime.strptime(str(date.today().year) + "1020", "%Y%m%d")
             # 3/15 - 6/14
             elif date.today() < datetime.strptime(str(date.today().year) + "0615", "%Y%m%d").date():
-                expdate = datetime.strptime(str(date.today()) + "1020", "%Y%m%d")
+                expdate = datetime.strptime(str(date.today().year) + "1020", "%Y%m%d")
             # 6/15 - 8/31
             elif date.today() < datetime.strptime(str(date.today().year) + "0901", "%Y%m%d").date():
                 expdate = datetime.strptime(str(date.today().year + 1) + "0131", "%Y%m%d")

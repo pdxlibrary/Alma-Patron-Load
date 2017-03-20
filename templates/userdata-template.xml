@@ -65,11 +65,6 @@
         </contact_info>
         <user_identifiers>
             <user_identifier segment_type="External">
-                <id_type desc="External">EXTERNAL</id_type>
-                <value>{{ patron.username }}</value>
-                <status>ACTIVE</status>
-            </user_identifier>
-            <user_identifier segment_type="External">
                 <id_type desc="University ID">UNIV_ID</id_type>
                 <value>{{ patron.username.lower() }}</value>
                 <status>ACTIVE</status>
