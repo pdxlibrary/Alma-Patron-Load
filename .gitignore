@@ -34,3 +34,6 @@ Thumbs.db
 *.old
 *.bak
 /tmp
+
+# Config files
+config/patronload.config
