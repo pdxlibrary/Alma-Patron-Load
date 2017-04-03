@@ -133,7 +133,7 @@ class Patron:
         self.middle_name = patron_data['middle_name']
         self.last_name = patron_data['last_name']
 
-        if is_distance:
+        if is_distance and patron_data['patron'] != 'HIGHSCHOOL':
             self.patron_type = self.patron_types[patron_data['patron']] + "-distance"
         else:
             self.patron_type = self.patron_types[patron_data['patron']]
