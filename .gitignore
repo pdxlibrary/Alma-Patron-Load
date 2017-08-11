@@ -30,3 +30,11 @@ Thumbs.db
 # Other
 *.old
 *.bak
+
+# VS Code
+.vscode
+
+# This app
+config/patronload.config
+tmp/*
+!tmp/.gitkeep
