@@ -43,6 +43,7 @@ class Patron:
     campus_email_domain = 'pdx.edu'
     patron_types = {
         'FACULTY': 'faculty',
+        'ENROLLED-FACULTY': 'enrolled-faculty',
         'EMERITUS': 'emeritus',
         'GRADASSISTANT': 'gradasst',
         'GRADUATE': 'grad',
@@ -65,10 +66,10 @@ class Patron:
     def get_expiration_date(patron_type):
         if patron_type in ['staff', 'staff-distance']:
             if date.today() < datetime.strptime(str(date.today().year) + "0601", "%Y%m%d").date():
-                expdate = datetime.strptime(str(date.today().year + 2) + "0630")
+                expdate = datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
             else:
                 expdate = datetime.strptime(str(date.today().year + 1) + "0630", "%Y%m%d")
-        elif patron_type in ['faculty', 'gradasst', 'emeritus',
+        elif patron_type in ['faculty', 'gradasst', 'emeritus', 'enrolled-faculty',
                              'faculty-distance', 'gradasst-distance', 'emeritus-distance']:
             expdate = datetime.strptime(str(date.today().year + 2) + "0630", "%Y%m%d")
         elif patron_type in ['grad', 'undergrad', 'honors', 'highschool',
@@ -78,7 +79,7 @@ class Patron:
                 expdate = datetime.strptime(str(date.today().year) + "1020", "%Y%m%d")
             # 3/15 - 6/14
             elif date.today() < datetime.strptime(str(date.today().year) + "0615", "%Y%m%d").date():
-                expdate = datetime.strptime(str(date.today()) + "1020", "%Y%m%d")
+                expdate = datetime.strptime(str(date.today().year) + "1020", "%Y%m%d")
             # 6/15 - 8/31
             elif date.today() < datetime.strptime(str(date.today().year) + "0901", "%Y%m%d").date():
                 expdate = datetime.strptime(str(date.today().year + 1) + "0131", "%Y%m%d")
@@ -125,7 +126,6 @@ class Patron:
 
         if patron_data['pref_first_name']:
             self.first_name = patron_data['pref_first_name'] 
-            #self.first_name = patron_data['pref_first_name'].decode('utf-8').encode('ascii', 'ignore')
         else:
             self.first_name = patron_data['first_name']
 
@@ -133,7 +133,7 @@ class Patron:
         self.middle_name = patron_data['middle_name']
         self.last_name = patron_data['last_name']
 
-        if is_distance:
+        if is_distance and patron_data['patron'] != 'HIGHSCHOOL':
             self.patron_type = self.patron_types[patron_data['patron']] + "-distance"
         else:
             self.patron_type = self.patron_types[patron_data['patron']]
@@ -145,7 +145,7 @@ class Patron:
         self.state = patron_data['state_1']
         self.zip_code = patron_data['zip_1'][:5]
 
-        if self.patron_type == 'faculty':
+        if self.patron_type == 'faculty' or self.patron_type == 'enrolled-faculty':
             self.address_type = 'work'
         elif is_distance:
             self.address_type = 'home'
@@ -230,8 +230,7 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
     patron_data = {}
 
     csv_file = open(file_path, 'rb')
-    #csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='latin-1') # ISO-8859-1 ?
-    csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='ISO-8859-1') # ISO-8859-1 ?
+    csv_reader = unicodecsv.DictReader(csv_file, delimiter=',', encoding='ISO-8859-1') 
     for row in csv_reader:
         distance = False
     
