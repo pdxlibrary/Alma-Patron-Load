@@ -15,6 +15,7 @@ from datetime import date, datetime, timedelta
 from email.mime.text import MIMEText
 from itertools import islice
 from jinja2 import Environment, FileSystemLoader
+from xml.sax.saxutils import escape
 
 
 # Input
@@ -140,7 +141,8 @@ class Patron:
 
         if patron_data['coadmit']:
             self.coadmit_code = self.coadmits[patron_data['coadmit']]
-        self.address_line1 = patron_data['street_line1']
+
+        self.address_line1 = escape(patron_data['street_line1'])
         self.city = patron_data['city_1']
         self.state = patron_data['state_1']
         self.zip_code = patron_data['zip_1'][:5]
@@ -237,7 +239,12 @@ def load_patron_data_file(file_path, non_distance_zip_codes):
         if row['zip_1'] and row['zip_1'][:5] not in non_distance_zip_codes:
             distance = True
         try:
-            patron_data[row['id_number']] = Patron(row, distance)
+            if row['street_line1'] == '':
+                logging.warn("Mandatory field street_line1 is not present in record %s" % row['id_number'])
+            elif row['email'] == '':
+                logging.warn("Mandatory field email is not present in record %s" % row['id_number'])
+            else:
+                patron_data[row['id_number']] = Patron(row, distance)
         except ValueError as error:
             logging.warn(error.args)
 
