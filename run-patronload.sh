@@ -12,15 +12,11 @@ if [ ! -d $config_tempfolder ]; then
 fi
 
 # Retrieve patron data file from the Banner SFTP server.
-# Using sshpass is not ideal, but key-based ssh auth wasn't a possibility.
 cd $config_tempfolder
-
-sshpass \
-	-p $config_banner_sftppass sftp -oStrictHostKeyChecking=no -oBatchMode=no -b - \
-	$config_banner_sftpuser@$config_banner_sftphost << EOF
-	cd $config_banner_path
-	get $config_banner_filename	
-	bye
+sftp $config_banner_sftpuser@$config_banner_sftphost << EOF
+cd $config_banner_path
+get $config_banner_filename
+bye
 EOF
 
 # Retrieve the non-distance ZIP codes file from DFS
