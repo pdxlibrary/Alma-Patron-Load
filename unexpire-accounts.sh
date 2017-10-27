@@ -56,7 +56,9 @@ fi
 
 venv/bin/python ./fetch-analytics-report-data.py -k ${config_alma_analitycs_api_key} -p ${config_alma_analytics_expired_group_members_report_path} -f ${config_alma_analytics_unexpirations_barcode_field} > $config_tempfolder/$config_alma_expired_patrons_list
 for barcode in `cat $config_tempfolder/$config_alma_expired_patrons_list`; do
-        echo "Processing ${barcode}..."
+	if [[ $config_debug ]]; then
+        	echo "Processing ${barcode}..."
+	fi
         if [ $(grep -ic ${barcode} ${config_tempfolder}/${config_banner_filename}) -gt 0 ]; then 
                 zip_code="$(grep ${barcode} ${config_tempfolder}/${config_banner_filename} | awk -F, '{print $12}' | sed -e 's/\"//g' | cut -c1-5)"
 

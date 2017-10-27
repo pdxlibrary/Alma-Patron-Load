@@ -24,7 +24,7 @@ if [[ $config_debug ]]; then
 fi
 
 venv/bin/python fetch-analytics-report-data.py -k ${config_alma_analitycs_api_key} -p ${config_alma_analytics_expired_patrons_report_path} -f ${config_alma_analytics_report_barcode_field} > $config_tempfolder/$config_alma_to_be_expired_patrons_list
-for barcode in `cat $config_tempfolder/$config_alma_to_be_expired_patrons_list`; do
+for barcode in `grep -E ^9[0-9]{8} $config_tempfolder/$config_alma_to_be_expired_patrons_list`; do
         if [[ $config_do_expirations ]]; then
                 venv/bin/python change-patron-group.py -g ${patron_group} -k ${config_alma_analitycs_api_key} ${barcode}
         else
