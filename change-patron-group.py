@@ -14,7 +14,7 @@ ALMA_API_BASE_URL = 'https://api-na.hosted.exlibrisgroup.com'
 ALMA_USERS_API_PATH = '/almaws/v1/users'
 
 # Mandatory fields that are not primary identifiers
-MANDATORY_ADDRESS_FIELDS = [ 'line1' ]
+MANDATORY_ADDRESS_FIELDS = [ 'line1', 'email' ]
 
 def main(argv):
     usage = "usage: %prog [options] barcode"
